@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clock-reader"
+version = "0.1.0"
+description = "Reads analogue clocks: synthetic training data, U-Net segmentation and projective geometry."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Kacper Pawlowski" }]
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "opencv-python-headless>=4.9",
+    "pyyaml>=6",
+    "torch>=2.3",
+    "timm>=1.0",
+]
+
+[project.optional-dependencies]
+detect = ["ultralytics>=8.4"]
+train = ["clock-reader[detect]", "tensorboard>=2.16", "onnx>=1.16", "onnxscript>=0.3", "onnxruntime>=1.18"]
+dev = ["clock-reader[train]", "pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+clock-synth = "clock_reader.synth:main"
+clock-train = "clock_reader.train:main"
+clock-eval = "clock_reader.evaluate:main"
+clock-read = "clock_reader.predict:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "NPY"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

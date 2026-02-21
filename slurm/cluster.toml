@@ -1,0 +1,65 @@
+# Slurm cluster settings and job definitions, rendered by slurm/generate.py.
+# Put your account in slurm/cluster.local.toml (not committed):  [cluster]  account = "..."
+# Find your Slurm account with:  sacctmgr show assoc format=Account%20,User,QOS | grep $USER
+
+[cluster]
+account = "CHANGE_ME"   # overridden by slurm/cluster.local.toml
+python_module = "Python/3.11.3-GCCcore-12.3.0"   # module spider Python
+venv = "/cluster/work/$USER/venvs/clock-reader"
+workdir = "/cluster/work/$USER/clock-reader"     # $DATA = workdir/data, $RUNS = workdir/runs
+mail_user = ""
+
+[defaults]
+partition = "GPUQ"
+time = "0-08:00:00"
+cpus = 16          # synthetic clocks are rendered on the fly by DataLoader workers
+mem = "32G"
+gpus = 1
+constraint = "gpu32g|gpu40g|gpu80g"   # V100 32 GB, A100, H100 (setup_cluster.sh installs PyTorch for CUDA 12.6)
+
+[jobs.train-resnet34]
+description = "Main model: ResNet-34 U-Net, 40 epochs x 40k fresh synthetic clocks"
+checkpoint_signal = true
+command = "python -m clock_reader.train --config configs/resnet34_unet.yaml"
+
+[jobs.train-resnet18]
+description = "Smaller ResNet-18 U-Net for comparison / CPU deployment"
+checkpoint_signal = true
+command = "python -m clock_reader.train --config configs/resnet18_unet.yaml"
+
+[jobs.ablation-geometry]
+description = "Train without tilt / without roll to measure what each augmentation buys (array)"
+checkpoint_signal = true
+command = "python -m clock_reader.train $ARRAY_ARGS"
+array = [
+    "--config configs/resnet34_unet.yaml --set synth.max_tilt=0 --set name=ablation_no_tilt",
+    "--config configs/resnet34_unet.yaml --set synth.max_roll_deg=0 --set name=ablation_no_roll",
+]
+
+[jobs.evaluate]
+description = "Network vs. classical vs. oracle on 2000 synthetic clocks (+ real photos if present)"
+time = "0-01:00:00"
+cpus = 8
+mem = "16G"
+command = "python -m clock_reader.evaluate --checkpoint $RUNS/resnet34_unet/best.pt --n 2000 --device cuda"
+
+[jobs.evaluate-others]
+description = "ResNet-18 and the ablation models on the main model's test clocks (array, comparable numbers)"
+time = "0-00:30:00"
+cpus = 8
+mem = "16G"
+command = "python -m clock_reader.evaluate $ARRAY_ARGS --test-config configs/resnet34_unet.yaml --n 2000 --device cuda"
+array = [
+    "--checkpoint $RUNS/resnet18_unet/best.pt",
+    "--checkpoint $RUNS/ablation_no_tilt/best.pt",
+    "--checkpoint $RUNS/ablation_no_roll/best.pt",
+]
+
+[jobs.export]
+description = "ONNX export with PyTorch parity check (CPU)"
+partition = "CPUQ"
+gpus = 0
+cpus = 4
+mem = "8G"
+time = "0-00:20:00"
+command = "python -m clock_reader.export --checkpoint $RUNS/resnet34_unet/best.pt"

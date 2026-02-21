@@ -1,0 +1,17 @@
+# Tiny CPU run to check the pipeline end to end (used by the tests).
+name: smoke
+device: cpu
+amp: false
+synth:
+  size: 128
+data:
+  train_size: 16
+  val_size: 8
+  batch_size: 8
+  num_workers: 0
+model:
+  encoder: resnet18
+  pretrained: false
+optim:
+  epochs: 1
+  warmup_epochs: 0

@@ -1,0 +1,18 @@
+# Main model: ResNet-34 U-Net on 256x256 synthetic clocks, 40 epochs x 40k fresh samples.
+name: resnet34_unet
+synth:
+  size: 256
+  max_tilt: 0.18
+  max_roll_deg: 25
+data:
+  train_size: 40000
+  val_size: 2000
+  batch_size: 32
+  num_workers: 16
+  real_csv: ""          # e.g. ${DATA}/real_clocks/labels.csv
+model:
+  encoder: resnet34
+optim:
+  epochs: 40
+  lr: 1.0e-3
+  encoder_lr_mult: 0.3

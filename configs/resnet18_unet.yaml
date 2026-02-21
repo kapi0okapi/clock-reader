@@ -1,0 +1,11 @@
+# Smaller/faster variant for comparison and CPU deployment.
+name: resnet18_unet
+data:
+  train_size: 40000
+  batch_size: 48
+  num_workers: 16
+model:
+  encoder: resnet18
+optim:
+  epochs: 40
+  lr: 1.5e-3
